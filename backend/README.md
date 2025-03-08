@@ -21,7 +21,7 @@ A simple REST API for fetching a list of tech events in Utah.
 The easiest way to run the application is using Docker Compose:
 
 ```bash
-docker-compose up -d
+make docker-run
 ```
 
 This will start the application and PostgreSQL database in Docker containers.
@@ -105,11 +105,11 @@ You can add test data to the database using SQL:
 
 ```sql
 INSERT INTO events (title, description, group_name, tags, date_time, location, event_link, created_at, updated_at)
-VALUES 
-  ('Go Meetup', 'Monthly meetup for Go developers', 'Golang Users Group', 
-   ARRAY['golang', 'programming'], '2023-04-15T18:00:00Z', 'Salt Lake City, UT', 
+VALUES
+  ('Go Meetup', 'Monthly meetup for Go developers', 'Golang Users Group',
+   ARRAY['golang', 'programming'], '2023-04-15T18:00:00Z', 'Salt Lake City, UT',
    'https://example.com/event', NOW(), NOW()),
-  ('AI Conference', 'Annual AI conference', 'Utah AI Group', 
-   ARRAY['ai', 'machine-learning', 'conferences'], '2023-05-20T09:00:00Z', 'Provo, UT', 
+  ('AI Conference', 'Annual AI conference', 'Utah AI Group',
+   ARRAY['ai', 'machine-learning', 'conferences'], '2023-05-20T09:00:00Z', 'Provo, UT',
    'https://example.com/ai-conf', NOW(), NOW());
 ```
