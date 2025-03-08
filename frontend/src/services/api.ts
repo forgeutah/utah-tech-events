@@ -23,7 +23,8 @@ export async function fetchEvents(filter: EventFilter = {}): Promise<EventsRespo
   }
 
   if (filter.cursor) {
-    queryParams.append('cursor', filter.cursor.toString());
+    queryParams.append('cursorId', filter.cursor.id.toString());
+    queryParams.append('cursorDateTime', filter.cursor.dateTime);
   }
 
   if (filter.pageSize) {

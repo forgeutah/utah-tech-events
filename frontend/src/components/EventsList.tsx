@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchEvents } from '../services/api';
-import { Event, EventFilter } from '../types/event';
+import { Event, EventFilter, CursorInfo } from '../types/event';
 import { EventCard } from './EventCard';
 import { FilterSidebar } from './FilterSidebar';
 
@@ -11,7 +11,7 @@ export function EventsList() {
   const [filter, setFilter] = useState<EventFilter>({
     pageSize: 10,
   });
-  const [nextCursor, setNextCursor] = useState<number | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<CursorInfo | undefined>(undefined);
   const [hasMore, setHasMore] = useState(false);
 
   const loadEvents = async (newFilter?: EventFilter) => {
@@ -75,38 +75,38 @@ export function EventsList() {
 
         <div className="md:w-3/4">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+              <p>{error}</p>
             </div>
           )}
 
-          {!events?.length && !loading ? (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <p className="text-gray-700">No events found. Try adjusting your filters.</p>
+          {events.length === 0 && !loading && !error ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No events found. Try adjusting your filters.</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {events.map(event => (
+            <div className="space-y-6">
+              {events.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
-
-              {hasMore && (
-                <div className="text-center mt-6">
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition-colors disabled:opacity-50"
-                  >
-                    {loading ? 'Loading...' : 'Load More'}
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
-          {loading && events.length === 0 && (
-            <div className="flex justify-center my-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          {loading && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              <p className="mt-2 text-gray-600">Loading events...</p>
+            </div>
+          )}
+
+          {hasMore && !loading && (
+            <div className="text-center mt-8">
+              <button
+                onClick={handleLoadMore}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition duration-300"
+              >
+                Load More
+              </button>
             </div>
           )}
         </div>

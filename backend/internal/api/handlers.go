@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/forgeutah/utah-tech-events/backend/internal/db"
 	"github.com/forgeutah/utah-tech-events/backend/internal/models"
@@ -40,13 +41,23 @@ func (h *Handler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Get cursor for pagination
-	cursor := 0
-	if cursorParam := query.Get("cursor"); cursorParam != "" {
-		var err error
-		cursor, err = strconv.Atoi(cursorParam)
+	var cursor *models.CursorInfo
+	if cursorIDParam := query.Get("cursorId"); cursorIDParam != "" && query.Get("cursorDateTime") != "" {
+		cursorID, err := strconv.Atoi(cursorIDParam)
 		if err != nil {
-			http.Error(w, "Invalid cursor parameter", http.StatusBadRequest)
+			http.Error(w, "Invalid cursorId parameter", http.StatusBadRequest)
 			return
+		}
+		
+		cursorDateTime, err := time.Parse(time.RFC3339, query.Get("cursorDateTime"))
+		if err != nil {
+			http.Error(w, "Invalid cursorDateTime parameter", http.StatusBadRequest)
+			return
+		}
+		
+		cursor = &models.CursorInfo{
+			ID:       cursorID,
+			DateTime: cursorDateTime,
 		}
 	}
 	
@@ -85,12 +96,9 @@ func (h *Handler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	
 	// Create response
 	response := models.EventsResponse{
-		Events:  events,
-		HasMore: hasMore,
-	}
-	
-	if hasMore {
-		response.NextCursor = &nextCursor
+		Events:     events,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
 	}
 	
 	// Write response

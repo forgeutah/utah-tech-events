@@ -11,15 +11,20 @@ export interface Event {
   updatedAt: string;
 }
 
+export interface CursorInfo {
+  id: number;
+  dateTime: string;
+}
+
 export interface EventsResponse {
   events: Event[];
-  nextCursor?: number;
+  nextCursor?: CursorInfo;
   hasMore: boolean;
 }
 
 export interface EventFilter {
   group?: string;
   tags?: string[];
-  cursor?: number;
+  cursor?: CursorInfo;
   pageSize?: number;
 }

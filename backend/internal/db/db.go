@@ -44,7 +44,7 @@ func (d *DB) Close() error {
 }
 
 // GetEvents retrieves events based on the provided filter
-func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models.Event, int, bool, error) {
+func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models.Event, *models.CursorInfo, bool, error) {
 	// Build the query
 	query := `
 		SELECT id, title, description, group_name, tags, date_time, location, event_link, created_at, updated_at
@@ -67,14 +67,20 @@ func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models
 		argCount++
 	}
 
-	if filter.Cursor > 0 {
-		query += fmt.Sprintf(" AND id < $%d", argCount)
-		args = append(args, filter.Cursor)
-		argCount++
+	// For cursor-based pagination with date_time sorting
+	if filter.Cursor != nil {
+		// Use the composite cursor to filter events
+		// Get events with:
+		// 1. Earlier date_time than the cursor event, OR
+		// 2. Same date_time but lower ID (to handle multiple events on the same date)
+		query += fmt.Sprintf(" AND (date_time < $%d OR (date_time = $%d AND id < $%d))", 
+			argCount, argCount+1, argCount+2)
+		args = append(args, filter.Cursor.DateTime, filter.Cursor.DateTime, filter.Cursor.ID)
+		argCount += 3
 	}
 
 	// Add order by and limit
-	query += " ORDER BY id DESC"
+	query += " ORDER BY date_time DESC, id DESC"
 	if filter.PageSize > 0 {
 		query += fmt.Sprintf(" LIMIT $%d", argCount)
 		args = append(args, filter.PageSize+1) // Fetch one more to determine if there are more results
@@ -84,7 +90,7 @@ func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models
 	// Execute the query
 	rows, err := d.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, 0, false, fmt.Errorf("failed to query events: %w", err)
+		return nil, nil, false, fmt.Errorf("failed to query events: %w", err)
 	}
 	defer rows.Close()
 
@@ -107,7 +113,7 @@ func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models
 			&event.UpdatedAt,
 		)
 		if err != nil {
-			return nil, 0, false, fmt.Errorf("failed to scan event: %w", err)
+			return nil, nil, false, fmt.Errorf("failed to scan event: %w", err)
 		}
 
 		event.Tags = []string(tagsArray)
@@ -115,17 +121,23 @@ func (d *DB) GetEvents(ctx context.Context, filter models.EventFilter) ([]models
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, false, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, nil, false, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
 	// Check if there are more results
 	hasMore := false
-	nextCursor := 0
+	var nextCursor *models.CursorInfo
 
 	if filter.PageSize > 0 && len(events) > filter.PageSize {
 		hasMore = true
 		events = events[:filter.PageSize]
-		nextCursor = events[len(events)-1].ID
+		
+		// Create the next cursor using the last event in the current page
+		lastEvent := events[len(events)-1]
+		nextCursor = &models.CursorInfo{
+			ID:       lastEvent.ID,
+			DateTime: lastEvent.DateTime,
+		}
 	}
 
 	return events, nextCursor, hasMore, nil

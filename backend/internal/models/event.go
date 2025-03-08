@@ -18,17 +18,23 @@ type Event struct {
 	UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
 }
 
+// CursorInfo represents the cursor information for pagination
+type CursorInfo struct {
+	ID       int       `json:"id"`
+	DateTime time.Time `json:"dateTime"`
+}
+
 // EventFilter represents the filter parameters for events
 type EventFilter struct {
 	Group    string   `json:"group"`
 	Tags     []string `json:"tags"`
-	Cursor   int      `json:"cursor"`
+	Cursor   *CursorInfo `json:"cursor,omitempty"`
 	PageSize int      `json:"pageSize"`
 }
 
 // EventsResponse represents the response for the events endpoint
 type EventsResponse struct {
-	Events     []Event `json:"events"`
-	NextCursor *int    `json:"nextCursor,omitempty"`
-	HasMore    bool    `json:"hasMore"`
+	Events     []Event     `json:"events"`
+	NextCursor *CursorInfo `json:"nextCursor,omitempty"`
+	HasMore    bool        `json:"hasMore"`
 }
